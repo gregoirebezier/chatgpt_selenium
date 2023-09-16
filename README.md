@@ -1,7 +1,7 @@
 [![Language](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg?style=for-the-badge)]()
 [![Available](https://img.shields.io/badge/Available-%20Debian-red.svg?style=for-the-badge)]()
 [![Available](https://img.shields.io/badge/Available-%20Windows-red.svg?style=for-the-badge)]()
-[![Download](https://img.shields.io/badge/Size-1.5MO-brightgreen.svg?style=for-the-badge)]()
+[![Download](https://img.shields.io/badge/Size-21MO-brightgreen.svg?style=for-the-badge)]()
 <br>
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 # 
