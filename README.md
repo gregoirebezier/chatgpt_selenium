@@ -15,7 +15,7 @@
 * [IMPORTANT](#important)
 
 ## General info
-Ceci est un script pour communiquer avec chatGPT via le terminal, je vous laisse imaginer les possibilités de ce que vous pouvez faire avec...
+Ceci est un script avec la librairie sélénium pour communiquer avec chatGPT sans utiliser l'API payante via le terminal, je vous laisse imaginer les possibilités de ce que vous pouvez faire avec...
 
 ## Setup
 --------------------------------------------------------
