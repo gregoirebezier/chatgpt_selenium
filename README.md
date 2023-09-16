@@ -48,5 +48,5 @@ EMAIL=<Email>
 * undetected-chromedriver (3.5.3)
 
 ## IMPORTANT
-- `chromedriver.exe that I pushed supports only Chrome version 114 ! `
+- `The script supports only Chrome version 116 (You have to change the version in the code if you want another one) ! `
 - `You have to have a ChatGPT account ! A Connexion with Oauth2 won't work (ex: Google, Microsoft etc..)`
