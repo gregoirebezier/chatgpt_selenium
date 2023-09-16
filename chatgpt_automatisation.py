@@ -31,7 +31,7 @@ def main():
         headless=headless, local_proxy=local_proxy, proxy_server=proxy_server
     )
     try:
-        chatgpt_automatisation(driver, arg)
+        driver = chatgpt_automatisation(driver, arg)
     finally:
         driver.close()
         driver.quit()
@@ -134,6 +134,7 @@ def chatgpt_loop(driver):
             )
         )
         chatgpt_prompt.send_keys(text_to_send)
+    return driver
 
 
 def chatgpt_automatisation(driver, text_to_send):
@@ -153,7 +154,7 @@ def chatgpt_automatisation(driver, text_to_send):
         chatgpt_prompt = None
     if chatgpt_prompt:
         chatgpt_prompt.send_keys(text_to_send)
-        chatgpt_loop(driver)
+        driver = chatgpt_loop(driver)
     else:
         driver = chatgpt_login(driver)
         chatgpt_prompt = WebDriverWait(driver, 10).until(
@@ -162,7 +163,8 @@ def chatgpt_automatisation(driver, text_to_send):
             )
         )
         chatgpt_prompt.send_keys(text_to_send)
-        chatgpt_loop(driver)
+        driver = chatgpt_loop(driver)
+    return driver
 
 
 signal.signal(signal.SIGINT, handle_signal)
