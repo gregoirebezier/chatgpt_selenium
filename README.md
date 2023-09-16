@@ -49,4 +49,4 @@ EMAIL=<Email>
 
 ## IMPORTANT
 - `chromedriver.exe that I pushed supports only Chrome version 114 ! `
-
+- `You have to have a ChatGPT account ! A Connexion with Oauth2 won't work (ex: Google, Microsoft etc..)`
