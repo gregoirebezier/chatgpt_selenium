@@ -12,7 +12,11 @@ if (platform.system()) == "Windows":
 elif (platform.system()) == "Linux":
     full_path = "/home/" + os.getlogin() + "/.config/google-chrome/Default2"
 elif (platform.system()) == "Darwin":
-    full_path = "/Users/" + os.getlogin() + "/Library/Application Support/Google/Chrome/Default2"  # noqa
+    full_path = (
+        "/Users/"
+        + os.getlogin()
+        + "/Library/Application Support/Google/Chrome/Default2"
+    )  # noqa
 else:
     print("OS not supported")
     exit(1)
