@@ -2,6 +2,7 @@ import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
 import os
 import platform
+from webdriver_manager.chrome import ChromeDriverManager
 
 if (platform.system()) == "Windows":
     full_path = (
@@ -30,8 +31,8 @@ def connexion(headless=False, proxy_server=False, local_proxy=False):
     chrome_options = the_options(headless, proxy_server, local_proxy)
     driver = uc.Chrome(
         options=chrome_options,
-        driver_executable_path="chromedriver",
-        version_main=114,
+        executable_path=ChromeDriverManager().install(),
+        version_main=116,
     )
     return driver
 
@@ -47,6 +48,9 @@ def the_options(healess=False, proxy_server=False, local_proxy=False):
         "--enable-javascript",
         "--no-sandbox",
         "--disable-gpu",
+        "--disable-setuid-sandbox",
+        "--disable-application-cache",
+        "--disable-extensions",
         "--disable-dev-shm-usage",
         f"--user-data-dir={full_path}",
     ]

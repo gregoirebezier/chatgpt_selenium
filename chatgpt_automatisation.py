@@ -206,8 +206,10 @@ def chatgpt_automatisation(driver):
     except Exception:
         chatgpt_prompt = None
     if chatgpt_prompt:
+        print("CONNECTED!\n\n")
         driver = chatgpt_loop(driver)
     else:
+        print("NOT CONNECTED!\n\n")
         driver = chatgpt_login(driver)
         chatgpt_prompt = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located(
