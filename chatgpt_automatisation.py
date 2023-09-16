@@ -20,9 +20,12 @@ def main():
         if arg in ("-h", "--help"):
             my_help()
             sys.exit(0)
-        elif arg == "-t" or arg == "--text":
-            arg = sys.argv[2]
-            break
+        elif arg == "--headless":
+            headless = False
+        elif arg == "--local-proxy":
+            local_proxy = True
+        elif arg == "--proxy-server":
+            proxy_server = True
         else:
             print(f"Unknown argument: {arg}")
             sys.exit(1)
@@ -31,7 +34,7 @@ def main():
         headless=headless, local_proxy=local_proxy, proxy_server=proxy_server
     )
     try:
-        driver = chatgpt_automatisation(driver, arg)
+        driver = chatgpt_automatisation(driver)
     finally:
         driver.close()
         driver.quit()
@@ -41,15 +44,28 @@ def my_help():
     print("Usage: python3 chatgpt_automatisation.py [options]")
     print("Options:")
     print("  -h, --help: show this help message and exit")
-    print("  -t, --text: text to send")
-    print("Example:")
-    print('  python3 chatgpt_automatisation.py -t "Bonjour, comment allez-vous ?"')
+    print("  --headless: remove headless mode")
+    print("  --local-proxy: use local proxy")
+    print("  --proxy-server: use proxy server")
 
 
 def handle_signal(sig, frame):
     """Handle Ctrl+C, Ctrl+Z and Ctrl+D"""
     print("\nYou pressed Ctrl+C, Ctrl+Z or Ctrl+D. Exiting gracefully.")
     sys.exit(0)
+
+
+def effacement_conversation(driver):
+    trash_button = driver.find_elements(
+        By.XPATH, "//button[@class='p-1 hover:text-white']"
+    )
+    trash_button[1].click()
+    confirm_button = WebDriverWait(driver, 3).until(
+        EC.presence_of_element_located(
+            (By.XPATH, "//button[@class='btn relative btn-danger']")
+        )
+    )
+    confirm_button.click()
 
 
 def chatgpt_login(driver):
@@ -98,10 +114,55 @@ def chatgpt_login(driver):
     return driver
 
 
+def help_command():
+    print(
+        "\n\nCommandes disponibles :\n\n"
+        "/help : Affiche l'aide\n"
+        "/exit : Quitte le programme\n"
+        "/clean : Supprime la conversation et en recommance une nouvelle\n"
+    )
+
+
+def manage_message(driver):
+    text_to_send = input("\nEnvoyez un message (aide: /help) : ")
+
+    while (
+        text_to_send == "/help" or text_to_send == "/clean" or text_to_send == "/exit"
+    ):
+        if text_to_send == "/help":
+            help_command()
+        elif text_to_send == "/clean":
+            try:
+                effacement_conversation(driver)
+            except Exception:
+                print("La conversation est déjà vide")
+        elif text_to_send == "/exit":
+            reponse = input("Voulez vous supprimer la conversation ? (O/N) : ")
+            if reponse == "O" or reponse == "o":
+                try:
+                    effacement_conversation(driver)
+                except Exception:
+                    print("La conversation est déjà vide")
+            else:
+                print("La conversation n'a pas été supprimée")
+            exit()
+        text_to_send = input("\nEnvoyez un message (aide: /help) : ")
+
+    return text_to_send
+
+
 def chatgpt_loop(driver):
     """Chatgpt loop"""
 
     while 1:
+        text_to_send = manage_message(driver)
+        chatgpt_prompt = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//textarea[@id='prompt-textarea']")
+            )
+        )
+        chatgpt_prompt.send_keys(text_to_send)
+
         send_button = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located(
                 (By.XPATH, "//button[@data-testid='send-button']")
@@ -125,25 +186,18 @@ def chatgpt_loop(driver):
             )
         )
         print("\nChatGPT:\n", responses[-1].text)
-        text_to_send = input('\nEnvoyez un message (quitter: "exit") : ')
-        if text_to_send == "exit":
-            break
-        chatgpt_prompt = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//textarea[@id='prompt-textarea']")
-            )
-        )
-        chatgpt_prompt.send_keys(text_to_send)
+
     return driver
 
 
-def chatgpt_automatisation(driver, text_to_send):
+def chatgpt_automatisation(driver):
     """Chatgpt automatisation"""
 
     base_url = "https://chat.openai.com/"
 
     driver.get(base_url)
     driver.implicitly_wait(10)
+    sleep(2)
     try:
         chatgpt_prompt = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located(
@@ -153,7 +207,6 @@ def chatgpt_automatisation(driver, text_to_send):
     except Exception:
         chatgpt_prompt = None
     if chatgpt_prompt:
-        chatgpt_prompt.send_keys(text_to_send)
         driver = chatgpt_loop(driver)
     else:
         driver = chatgpt_login(driver)
@@ -162,7 +215,6 @@ def chatgpt_automatisation(driver, text_to_send):
                 (By.XPATH, "//textarea[@id='prompt-textarea']")
             )
         )
-        chatgpt_prompt.send_keys(text_to_send)
         driver = chatgpt_loop(driver)
     return driver
 
