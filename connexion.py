@@ -16,7 +16,7 @@ elif (platform.system()) == "Darwin":
         "/Users/"
         + os.getlogin()
         + "/Library/Application Support/Google/Chrome/Default2"
-    )  # noqa
+    )
 else:
     print("OS not supported")
     exit(1)

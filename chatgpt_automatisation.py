@@ -143,9 +143,14 @@ def chatgpt_automatisation(driver, text_to_send):
 
     driver.get(base_url)
     driver.implicitly_wait(10)
-    chatgpt_prompt = WebDriverWait(driver, 2).until(
-        EC.presence_of_element_located((By.XPATH, "//textarea[@id='prompt-textarea']"))
-    )
+    try:
+        chatgpt_prompt = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//textarea[@id='prompt-textarea']")
+            )
+        )
+    except Exception:
+        chatgpt_prompt = None
     if chatgpt_prompt:
         chatgpt_prompt.send_keys(text_to_send)
         chatgpt_loop(driver)
