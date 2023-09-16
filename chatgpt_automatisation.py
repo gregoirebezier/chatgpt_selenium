@@ -197,7 +197,6 @@ def chatgpt_automatisation(driver):
 
     driver.get(base_url)
     driver.implicitly_wait(10)
-    sleep(2)
     try:
         chatgpt_prompt = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located(
