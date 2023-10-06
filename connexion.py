@@ -32,7 +32,7 @@ def connexion(headless=False, proxy_server=False, local_proxy=False):
     driver = uc.Chrome(
         options=chrome_options,
         executable_path=ChromeDriverManager().install(),
-        version_main=116,
+        version_main=117,
     )
     return driver
 

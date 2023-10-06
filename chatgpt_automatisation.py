@@ -6,6 +6,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from connexion import connexion
 from decouple import config
+import os
+from selenium.webdriver.common.keys import Keys
 
 sys.tracebacklimit = 0
 
@@ -19,6 +21,15 @@ def main():
     for arg in sys.argv[1:]:
         if arg in ("-h", "--help"):
             my_help()
+            sys.exit(0)
+        elif arg in ("-r", "--readme"):
+            print("Generating README.md file...")
+            driver = connexion(
+                headless=headless, local_proxy=local_proxy, proxy_server=proxy_server
+            )
+            driver = readme_generator(driver, sys.argv[2])
+            driver.close()
+            driver.quit()
             sys.exit(0)
         elif arg == "--headless":
             headless = False
@@ -44,6 +55,7 @@ def my_help():
     print("Usage: python3 chatgpt_automatisation.py [options]")
     print("Options:")
     print("  -h, --help: show this help message and exit")
+    print("  -r, --readme <PYTHON_FILE> : generate README.md file")
     print("  --headless: remove headless mode")
     print("  --local-proxy: use local proxy")
     print("  --proxy-server: use proxy server")
@@ -57,7 +69,7 @@ def handle_signal(sig, frame):
 
 def effacement_conversation(driver):
     trash_button = driver.find_elements(
-        By.XPATH, "//button[@class='p-1 hover:text-white']"
+        By.XPATH, "//button[@class='p-1 hover:text-token-text-primary']"
     )
     trash_button[1].click()
     confirm_button = WebDriverWait(driver, 3).until(
@@ -66,6 +78,7 @@ def effacement_conversation(driver):
         )
     )
     confirm_button.click()
+    return driver
 
 
 def chatgpt_login(driver):
@@ -140,7 +153,7 @@ def manage_message(driver):
             reponse = input("Voulez vous supprimer la conversation ? (O/N) : ")
             if reponse == "O" or reponse == "o":
                 try:
-                    effacement_conversation(driver)
+                    driver = effacement_conversation(driver)
                 except Exception:
                     print("La conversation est déjà vide")
             else:
@@ -154,8 +167,70 @@ def manage_message(driver):
 def chatgpt_loop(driver):
     """Chatgpt loop"""
 
+    send_button = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located(
+            (By.XPATH, "//button[@data-testid='send-button']")
+        )
+    )
+    send_button.click()
+    WebDriverWait(driver, 50).until(
+        EC.presence_of_element_located(
+            (
+                By.XPATH,
+                "//button[@class='btn relative btn-neutral -z-0 whitespace-nowrap border-0 md:border']",  # noqa
+            )
+        )
+    )
+    responses = WebDriverWait(driver, 10).until(
+        EC.presence_of_all_elements_located(
+            (
+                By.XPATH,
+                "//div[@class='markdown prose w-full break-words dark:prose-invert light']",  # noqa
+            )
+        )
+    )
+
+    return driver, responses
+
+
+def setup_chatgpt(driver):
+    """Setup chatgpt"""
+    base_url = "https://chat.openai.com/"
+
+    driver.get(base_url)
+    driver.implicitly_wait(10)
+    try:
+        chatgpt_prompt = WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//textarea[@id='prompt-textarea']")
+            )
+        )
+        chatgpt_prompt = 1
+    except Exception:
+        chatgpt_prompt = 0
+
+    if chatgpt_prompt:
+        print("CONNECTED!\n\n")
+    else:
+        print("NOT CONNECTED!\n\n")
+        with open("source.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        driver = chatgpt_login(driver)
+        chatgpt_prompt = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//textarea[@id='prompt-textarea']")
+            )
+        )
+    return driver
+
+
+def chatgpt_automatisation(driver):
+    """Chatgpt automatisation"""
+    print("ChatGPT automatisation\n")
+    driver = setup_chatgpt(driver)
     while 1:
         text_to_send = manage_message(driver)
+
         chatgpt_prompt = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located(
                 (By.XPATH, "//textarea[@id='prompt-textarea']")
@@ -163,60 +238,45 @@ def chatgpt_loop(driver):
         )
         chatgpt_prompt.send_keys(text_to_send)
 
-        send_button = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//button[@data-testid='send-button']")
-            )
-        )
-        send_button.click()
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (
-                    By.XPATH,
-                    "//button[@class='btn relative btn-neutral -z-0 whitespace-nowrap border-0 md:border']",  # noqa
-                )
-            )
-        )
-        responses = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located(
-                (
-                    By.XPATH,
-                    "//div[@class='markdown prose w-full break-words dark:prose-invert light']",  # noqa
-                )
-            )
-        )
+        driver, responses = chatgpt_loop(driver)
         print("\nChatGPT:\n", responses[-1].text)
+    return driver
+
+
+def write_prompt(driver, text_to_send):
+    """Write prompt"""
+    print("Writing prompt...\n It may take a while... ~ 30s")
+    chatgpt_prompt = WebDriverWait(driver, 2).until(
+        EC.presence_of_element_located((By.XPATH, "//textarea[@id='prompt-textarea']"))
+    )
+    for line in text_to_send:
+        chatgpt_prompt.send_keys(line.replace("\n", ""))
+        chatgpt_prompt.send_keys(Keys.SHIFT + Keys.ENTER)
 
     return driver
 
 
-def chatgpt_automatisation(driver):
-    """Chatgpt automatisation"""
+def readme_generator(driver, filepath):
+    """Generate README.md file"""
+    gpt_readme_generator_prompt = "Je te présente le code source principal de mon nouveau projet Python. À partir de ce code, génère un README.md détaillé en format Markdown. Assure-toi d'inclure: Le titre du projet. Une brève description. Les prérequis nécessaires pour exécuter le code. Les étapes d'installation. Un exemple d'utilisation basé sur le code fourni. Les fonctionnalités principales basées sur les fonctions présentes dans le code. Une section 'Contributeurs' (même si elle est vide pour l'instant). Seul le contenu Markdown du README.md est attendu en réponse. Aucun commentaire, explication supplémentaire, ou autre format que le Markdown n'est nécessaire. Voici le code :"  # noqa
 
-    base_url = "https://chat.openai.com/"
-
-    driver.get(base_url)
-    driver.implicitly_wait(10)
-    try:
-        chatgpt_prompt = WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//textarea[@id='prompt-textarea']")
+    driver = setup_chatgpt(driver)
+    sleep(2)
+    if os.path.exists(filepath):
+        with open(filepath, "r") as f:
+            code_text = f.readlines()
+            code_text.insert(0, gpt_readme_generator_prompt)
+            driver = write_prompt(driver, code_text)
+            driver, responses = chatgpt_loop(driver)
+            responses = (
+                responses[-1].text.replace("markdown", "").replace("Copy code", "")
             )
-        )
-    except Exception:
-        chatgpt_prompt = None
-    if chatgpt_prompt:
-        print("CONNECTED!\n\n")
-        driver = chatgpt_loop(driver)
+            with open("README.md", "w", encoding="utf-8") as f:
+                f.write(responses)
+            driver = effacement_conversation(driver)
     else:
-        print("NOT CONNECTED!\n\n")
-        driver = chatgpt_login(driver)
-        chatgpt_prompt = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//textarea[@id='prompt-textarea']")
-            )
-        )
-        driver = chatgpt_loop(driver)
+        print("File not found")
+        sys.exit(1)
     return driver
 
 
